@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PinteSave - Saved Videos</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #dc143c;
+            --primary-dark: #a01028;
+            --primary-light: #ff1744;
+            --secondary: #ff4757;
+            --accent: #ff6b81;
+
+            /* Light Theme */
+            --bg-light: #f5f7fa;
+            --card-light: #ffffff;
+            --text-light: #1a1a1a;
+            --text-secondary-light: #6b7280;
+            --border-light: #e5e7eb;
+            --shadow-light: rgba(0, 0, 0, 0.08);
+            --glass-light: rgba(255, 255, 255, 0.95);
+
+            /* Dark Theme */
+            --bg-dark: #0f0f0f;
+            --card-dark: #1a1a1a;
+            --text-dark: #ffffff;
+            --text-secondary-dark: #9ca3af;
+            --border-dark: #2d2d2d;
+            --shadow-dark: rgba(0, 0, 0, 0.4);
+            --glass-dark: rgba(26, 26, 26, 0.95);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-light);
+            overflow-x: hidden;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        body.dark {
+            background: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-circle-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--primary);
+            top: -250px;
+            right: -250px;
+        }
+
+        .bg-circle-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--secondary);
+            bottom: -200px;
+            left: -200px;
+            animation-delay: 5s;
+        }
+
+        .bg-circle-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: 10s;
+        }
+
+        body.dark .bg-circle {
+            opacity: 0.15;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            33% { transform: translate(50px, -50px); }
+            66% { transform: translate(-50px, 50px); }
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--glass-light);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border-light);
+            padding: 16px 20px;
+            box-shadow: 0 4px 20px var(--shadow-light);
+            transition: all 0.3s ease;
+        }
+
+        body.dark .header {
+            background: var(--glass-dark);
+            border-bottom-color: var(--border-dark);
+            box-shadow: 0 4px 20px var(--shadow-dark);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .theme-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--card-light);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        body.dark .theme-btn {
+            background: var(--card-dark);
+            box-shadow: 0 2px 8px var(--shadow-dark);
+        }
+
+        .theme-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* Search Bar */
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--text-secondary-light);
+            pointer-events: none;
+        }
+
+        body.dark .search-icon {
+            color: var(--text-secondary-dark);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 50px 14px 48px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            background: var(--card-light);
+            color: var(--text-light);
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        body.dark .search-input {
+            background: var(--card-dark);
+            color: var(--text-dark);
+            box-shadow: 0 2px 8px var(--shadow-dark);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary-light);
+        }
+
+        body.dark .search-input::placeholder {
+            color: var(--text-secondary-dark);
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--text-secondary-light);
+            border: none;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .clear-btn.show {
+            display: flex;
+        }
+
+        .clear-btn:active {
+            transform: translateY(-50%) scale(0.9);
+        }
+
+        /* Filters */
+        .filters-section {
+            padding: 16px 20px;
+        }
+
+        .filters-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary-light);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        body.dark .filter-title {
+            color: var(--text-secondary-dark);
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding-bottom: 4px;
+        }
+
+        .filter-chips::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chip {
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: var(--card-light);
+            border: 2px solid transparent;
+            color: var(--text-light);
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px var(--shadow-light);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        body.dark .filter-chip {
+            background: var(--card-dark);
+            color: var(--text-dark);
+            box-shadow: 0 2px 6px var(--shadow-dark);
+        }
+
+        .filter-chip.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(220, 20, 60, 0.4);
+        }
+
+        .filter-chip.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .filter-chip:not(.active):not(.disabled):hover {
+            border-color: var(--primary);
+        }
+
+        .filter-chip:not(.disabled):active {
+            transform: scale(0.95);
+        }
+
+        /* Stats */
+        .stats-bar {
+            padding: 12px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-secondary-light);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        body.dark .stats-bar {
+            color: var(--text-secondary-dark);
+        }
+
+        .video-count {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Videos Grid */
+        .videos-section {
+            padding: 0 20px 40px;
+        }
+
+        .videos-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .videos-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+        }
+
+        /* Video Card */
+        .video-card {
+            position: relative;
+            border-radius: 16px;
+            background: var(--card-light);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px var(--shadow-light);
+            animation: fadeInUp 0.5s ease backwards;
+        }
+
+        body.dark .video-card {
+            background: var(--card-dark);
+            box-shadow: 0 4px 16px var(--shadow-dark);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .video-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 24px var(--shadow-light);
+        }
+
+        body.dark .video-card:hover {
+            box-shadow: 0 8px 24px var(--shadow-dark);
+        }
+
+        .video-thumbnail {
+            position: relative;
+            width: 100%;
+            padding-bottom: 133%;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            overflow: hidden;
+        }
+
+        .video-thumbnail img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .video-card:hover .video-thumbnail img {
+            transform: scale(1.08);
+        }
+
+        .video-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 2;
+        }
+
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+            padding: 50px 12px 12px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .video-card:hover .video-overlay {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .video-date {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .video-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(220, 20, 60, 0.4);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .delete-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+        }
+
+        .delete-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Loading */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        body.dark .spinner {
+            border-color: var(--border-dark);
+            border-top-color: var(--primary);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary-light);
+        }
+
+        body.dark .loading-text {
+            color: var(--text-secondary-dark);
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(220, 20, 60, 0.3);
+        }
+
+        .empty-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .empty-text {
+            font-size: 15px;
+            color: var(--text-secondary-light);
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        body.dark .empty-text {
+            color: var(--text-secondary-dark);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--card-light);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        body.dark .modal-content {
+            background: var(--card-dark);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin: 0 auto 18px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .modal-text {
+            text-align: center;
+            color: var(--text-secondary-light);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        body.dark .modal-text {
+            color: var(--text-secondary-dark);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-cancel {
+            background: var(--card-light);
+            border: 2px solid var(--border-light);
+            color: var(--text-light);
+        }
+
+        body.dark .modal-btn-cancel {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        .modal-btn-cancel:active {
+            transform: scale(0.96);
+        }
+
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 71, 87, 0.4);
+        }
+
+        .modal-btn-confirm:active {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg">
+        <div class="bg-circle bg-circle-1"></div>
+        <div class="bg-circle bg-circle-2"></div>
+        <div class="bg-circle bg-circle-3"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-container">
+            <div class="header-top">
+                <div class="logo">
+                    <div class="logo-icon">📥</div>
+                    <div class="logo-text">PinteSave</div>
+                </div>
+                <button class="theme-btn" id="themeBtn">🌙</button>
+            </div>
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Videolarni qidirish...">
+                <button class="clear-btn" id="clearBtn">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="filters-container">
+            <!-- Sort Filter -->
+            <div class="filter-group">
+                <div class="filter-title">Saralash</div>
+                <div class="filter-chips">
+                    <button class="filter-chip active" data-type="sort" data-value="new">
+                        🆕 <span>Yangidan eskiga</span>
+                    </button>
+                    <button class="filter-chip" data-type="sort" data-value="old">
+                        ⏰ <span>Eskidan yangiga</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Platform Filter -->
+            <div class="filter-group">
+                <div class="filter-title">Platforma</div>
+                <div class="filter-chips">
+                    <button class="filter-chip active" data-type="platform" data-value="pinterest">
+                        📌 <span>Pinterest</span>
+                    </button>
+                    <button class="filter-chip disabled" data-type="platform" data-value="instagram">
+                        📷 <span>Instagram</span>
+                    </button>
+                    <button class="filter-chip disabled" data-type="platform" data-value="youtube">
+                        ▶️ <span>YouTube</span>
+                    </button>
+                    <button class="filter-chip disabled" data-type="platform" data-value="tiktok">
+                        🎵 <span>TikTok</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+        <div class="video-count">
+            <span id="videoCount">0</span>
+            <span id="videoLabel">ta video</span>
+        </div>
+        <div id="filterInfo"></div>
+    </div>
+
+    <!-- Videos -->
+    <div class="videos-section">
+        <div class="videos-container">
+            <!-- Loading -->
+            <div id="loadingState" class="loading-state">
+                <div class="spinner"></div>
+                <div class="loading-text">Yuklanmoqda...</div>
+            </div>
+
+            <!-- Empty -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📭</div>
+                <div class="empty-title">Videolar topilmadi</div>
+                <div class="empty-text">
+                    Hozircha saqlangan videolar yo'q. Pinterest havolalarini botga yuboring va ular avtomatik saqlanadi.
+                </div>
+            </div>
+
+            <!-- Grid -->
+            <div id="videosGrid" class="videos-grid"></div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-icon">🗑️</div>
+            <div class="modal-title">Video o'chirish</div>
+            <div class="modal-text">
+                Rostdan ham bu videoni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Bekor qilish</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmDelete">O'chirish</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // State
+        let currentLang = 'uz';
+        let currentSort = 'new';
+        let currentPlatform = 'pinterest';
+        let allVideos = [];
+        let filteredVideos = [];
+        let userId = null;
+        let deleteVideoId = null;
+
+        // Translations
+        const translations = {
+            uz: {
+                search_placeholder: "Videolarni qidirish...",
+                sort_new: "Yangidan eskiga",
+                sort_old: "Eskidan yangiga",
+                platform_pinterest: "Pinterest",
+                platform_instagram: "Instagram",
+                platform_youtube: "YouTube",
+                platform_tiktok: "TikTok",
+                video_single: "ta video",
+                video_plural: "ta video",
+                no_videos_title: "Videolar topilmadi",
+                no_videos_text: "Hozircha saqlangan videolar yo'q. Pinterest havolalarini botga yuboring va ular avtomatik saqlanadi.",
+                loading: "Yuklanmoqda...",
+                saved_on: "Saqlangan:",
+                send: "Yuborish",
+                delete_title: "Video o'chirish",
+                delete_text: "Rostdan ham bu videoni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.",
+                cancel: "Bekor qilish",
+                confirm_delete: "O'chirish",
+                sent_success: "Video botga yuborildi!",
+                delete_success: "Video o'chirildi!",
+                error: "Xatolik yuz berdi"
+            },
+            en: {
+                search_placeholder: "Search videos...",
+                sort_new: "Newest first",
+                sort_old: "Oldest first",
+                platform_pinterest: "Pinterest",
+                platform_instagram: "Instagram",
+                platform_youtube: "YouTube",
+                platform_tiktok: "TikTok",
+                video_single: "video",
+                video_plural: "videos",
+                no_videos_title: "No Videos Found",
+                no_videos_text: "You haven't saved any videos yet. Send Pinterest links to the bot and they will be saved automatically.",
+                loading: "Loading...",
+                saved_on: "Saved:",
+                send: "Send",
+                delete_title: "Delete Video",
+                delete_text: "Are you sure you want to delete this video? This action cannot be undone.",
+                cancel: "Cancel",
+                confirm_delete: "Delete",
+                sent_success: "Video sent to bot!",
+                delete_success: "Video deleted!",
+                error: "An error occurred"
+            },
+            ru: {
+                search_placeholder: "Поиск видео...",
+                sort_new: "Сначала новые",
+                sort_old: "Сначала старые",
+                platform_pinterest: "Pinterest",
+                platform_instagram: "Instagram",
+                platform_youtube: "YouTube",
+                platform_tiktok: "TikTok",
+                video_single: "видео",
+                video_plural: "видео",
+                no_videos_title: "Видео не найдено",
+                no_videos_text: "У вас еще нет сохраненных видео. Отправьте ссылки Pinterest боту и они будут сохранены автоматически.",
+                loading: "Загрузка...",
+                saved_on: "Сохранено:",
+                send: "Отправить",
+                delete_title: "Удаление видео",
+                delete_text: "Вы уверены, что хотите удалить это видео? Это действие нельзя отменить.",
+                cancel: "Отмена",
+                confirm_delete: "Удалить",
+                sent_success: "Видео отправлено!",
+                delete_success: "Видео удалено!",
+                error: "Произошла ошибка"
+            },
+            ar: {
+                search_placeholder: "بحث عن الفيديوهات...",
+                sort_new: "الأحدث أولاً",
+                sort_old: "الأقدم أولاً",
+                platform_pinterest: "Pinterest",
+                platform_instagram: "Instagram",
+                platform_youtube: "YouTube",
+                platform_tiktok: "TikTok",
+                video_single: "فيديو",
+                video_plural: "فيديوهات",
+                no_videos_title: "لم يتم العثور على فيديوهات",
+                no_videos_text: "لم تقم بحفظ أي فيديوهات بعد. أرسل روابط Pinterest إلى البوت وسيتم حفظها تلقائياً.",
+                loading: "جاري التحميل...",
+                saved_on: "تم الحفظ:",
+                send: "إرسال",
+                delete_title: "حذف الفيديو",
+                delete_text: "هل أنت متأكد أنك تريد حذف هذا الفيديو؟ لا يمكن التراجع عن هذا الإجراء.",
+                cancel: "إلغاء",
+                confirm_delete: "حذف",
+                sent_success: "تم إرسال الفيديو!",
+                delete_success: "تم حذف الفيديو!",
+                error: "حدث خطأ"
+            },
+            ko: {
+                search_placeholder: "동영상 검색...",
+                sort_new: "최신순",
+                sort_old: "오래된순",
+                platform_pinterest: "Pinterest",
+                platform_instagram: "Instagram",
+                platform_youtube: "YouTube",
+                platform_tiktok: "TikTok",
+                video_single: "개",
+                video_plural: "개 동영상",
+                no_videos_title: "동영상을 찾을 수 없습니다",
+                no_videos_text: "아직 저장된 동영상이 없습니다. Pinterest 링크를 봇에 보내면 자동으로 저장됩니다.",
+                loading: "로딩 중...",
+                saved_on: "저장일:",
+                send: "보내기",
+                delete_title: "동영상 삭제",
+                delete_text: "정말로 이 동영상을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+                cancel: "취소",
+                confirm_delete: "삭제",
+                sent_success: "동영상이 전송되었습니다!",
+                delete_success: "동영상이 삭제되었습니다!",
+                error: "오류가 발생했습니다"
+            },
+            hi: {
+                search_placeholder: "वीडियो खोजें...",
+                sort_new: "नए से पुराने",
+                sort_old: "पुराने से नए",
+                platform_pinterest: "Pinterest",
+                platform_instagram: "Instagram",
+                platform_youtube: "YouTube",
+                platform_tiktok: "TikTok",
+                video_single: "वीडियो",
+                video_plural: "वीडियो",
+                no_videos_title: "कोई वीडियो नहीं मिला",
+                no_videos_text: "आपने अभी तक कोई वीडियो सहेजा नहीं है। Pinterest लिंक बॉट को भेजें और वे स्वचालित रूप से सहेजे जाएंगे।",
+                loading: "लोड हो रहा है...",
+                saved_on: "सहेजा गया:",
+                send: "भेजें",
+                delete_title: "वीडियो हटाएं",
+                delete_text: "क्या आप वाकई इस वीडियो को हटाना चाहते हैं? इस कार्रवाई को पूर्ववत नहीं किया जा सकता।",
+                cancel: "रद्द करें",
+                confirm_delete: "हटाएं",
+                sent_success: "वीडियो भेज दिया गया!",
+                delete_success: "वीडियो हटा दिया गया!",
+                error: "एक त्रुटि हुई"
+            }
+        };
+
+        // Get user ID and language
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            userId = tg.initDataUnsafe.user.id;
+            const langCode = tg.initDataUnsafe.user.language_code;
+            if (['uz', 'en', 'ru', 'ar', 'ko', 'hi'].includes(langCode)) {
+                currentLang = langCode;
+            }
+        }
+
+        const t = translations[currentLang];
+
+        // Theme Management
+        const themeBtn = document.getElementById('themeBtn');
+        const savedTheme = localStorage.getItem('pintesave_theme') || 'light';
+
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark');
+            themeBtn.textContent = '☀️';
+        }
+
+        themeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            themeBtn.textContent = isDark ? '☀️' : '🌙';
+            localStorage.setItem('pintesave_theme', isDark ? 'dark' : 'light');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        });
+
+        // Search
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+
+        searchInput.placeholder = t.search_placeholder;
+
+        searchInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            clearBtn.classList.toggle('show', value.length > 0);
+            filterVideos(value);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.classList.remove('show');
+            filterVideos('');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        });
+
+        // Filters
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                if (chip.classList.contains('disabled')) return;
+
+                const type = chip.dataset.type;
+                const value = chip.dataset.value;
+
+                document.querySelectorAll(`[data-type="${type}"]`).forEach(c => {
+                    c.classList.remove('active');
+                });
+                chip.classList.add('active');
+
+                if (type === 'sort') {
+                    currentSort = value;
+                } else if (type === 'platform') {
+                    currentPlatform = value;
+                }
+
+                sortAndRender();
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            });
+        });
+
+        // Update filter texts
+        document.querySelector('[data-value="new"] span').textContent = t.sort_new;
+        document.querySelector('[data-value="old"] span').textContent = t.sort_old;
+        document.querySelector('[data-value="pinterest"] span').textContent = t.platform_pinterest;
+        document.querySelector('[data-value="instagram"] span').textContent = t.platform_instagram;
+        document.querySelector('[data-value="youtube"] span').textContent = t.platform_youtube;
+        document.querySelector('[data-value="tiktok"] span').textContent = t.platform_tiktok;
+
+        // Load Videos
+        async function loadVideos() {
+            try {
+                const response = await fetch(`/api/videos/${userId}?lang=${currentLang}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    allVideos = data.videos || [];
+                    filteredVideos = [...allVideos];
+                    sortAndRender();
+                } else {
+                    showError();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError();
+            }
+        }
+
+        function filterVideos(query) {
+            if (!query) {
+                filteredVideos = [...allVideos];
+            } else {
+                const q = query.toLowerCase();
+                filteredVideos = allVideos.filter(video => {
+                    const date = new Date(video.saved_at).toLocaleDateString();
+                    return date.toLowerCase().includes(q);
+                });
+            }
+            sortAndRender();
+        }
+
+        function sortAndRender() {
+            filteredVideos.sort((a, b) => {
+                const dateA = new Date(a.saved_at);
+                const dateB = new Date(b.saved_at);
+                return currentSort === 'new' ? dateB - dateA : dateA - dateB;
+            });
+            renderVideos();
+        }
+
+        function renderVideos() {
+            const grid = document.getElementById('videosGrid');
+            const loading = document.getElementById('loadingState');
+            const empty = document.getElementById('emptyState');
+
+            loading.style.display = 'none';
+
+            if (filteredVideos.length === 0) {
+                grid.innerHTML = '';
+                empty.style.display = 'flex';
+                document.querySelector('.empty-title').textContent = t.no_videos_title;
+                document.querySelector('.empty-text').textContent = t.no_videos_text;
+                updateCount(0);
+                return;
+            }
+
+            empty.style.display = 'none';
+            grid.innerHTML = '';
+
+            filteredVideos.forEach((video, i) => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.style.animationDelay = `${i * 0.05}s`;
+
+                const date = new Date(video.saved_at);
+                const formattedDate = date.toLocaleDateString(currentLang, {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+
+                card.innerHTML = `
+                    <div class="video-thumbnail">
+                        <img src="${video.thumbnail}" alt="Video" loading="lazy"
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22533%22%3E%3Crect fill=%22%23dc143c%22 width=%22400%22 height=%22533%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2260%22%3E📹%3C/text%3E%3C/svg%3E'">
+                        <div class="video-badge">📌 Pinterest</div>
+                        <div class="video-overlay">
+                            <div class="video-date">📅 ${t.saved_on} ${formattedDate}</div>
+                            <div class="video-actions">
+                                <button class="action-btn send-btn" onclick="sendToBot('${video.file_id}')">
+                                    📤 ${t.send}
+                                </button>
+                                <button class="action-btn delete-btn" onclick="showDeleteModal(${video.id})">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            updateCount(filteredVideos.length);
+        }
+
+        function updateCount(count) {
+            document.getElementById('videoCount').textContent = count;
+            document.getElementById('videoLabel').textContent = count === 1 ? t.video_single : t.video_plural;
+        }
+
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'flex';
+            document.querySelector('.empty-title').textContent = t.error;
+            document.querySelector('.empty-text').textContent = t.error;
+        }
+
+        // Send to Bot
+        async function sendToBot(fileId) {
+            try {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+                const response = await fetch('/api/video/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, file_id: fileId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    tg.showPopup({ message: `✅ ${t.sent_success}`, buttons: [{ type: 'ok' }] });
+                } else {
+                    tg.showAlert(`❌ ${t.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tg.showAlert(`❌ ${t.error}`);
+            }
+        }
+
+        // Delete Modal
+        function showDeleteModal(videoId) {
+            deleteVideoId = videoId;
+            document.getElementById('deleteModal').classList.add('show');
+            document.querySelector('.modal-title').textContent = t.delete_title;
+            document.querySelector('.modal-text').textContent = t.delete_text;
+            document.querySelector('.modal-btn-cancel').textContent = t.cancel;
+            document.querySelector('.modal-btn-confirm').textContent = t.confirm_delete;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function closeModal() {
+            document.getElementById('deleteModal').classList.remove('show');
+            deleteVideoId = null;
+        }
+
+        document.getElementById('confirmDelete').addEventListener('click', async () => {
+            try {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+
+                const response = await fetch('/api/video/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, video_id: deleteVideoId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    closeModal();
+                    allVideos = allVideos.filter(v => v.id !== deleteVideoId);
+                    filteredVideos = filteredVideos.filter(v => v.id !== deleteVideoId);
+                    sortAndRender();
+                    tg.showPopup({ message: `✅ ${t.delete_success}`, buttons: [{ type: 'ok' }] });
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    tg.showAlert(`❌ ${t.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tg.showAlert(`❌ ${t.error}`);
+            }
+        });
+
+        // Initialize
+        if (userId) {
+            document.querySelector('.loading-text').textContent = t.loading;
+            loadVideos();
+        } else {
+            showError();
+        }
+    </script>
+</body>
+</html>
